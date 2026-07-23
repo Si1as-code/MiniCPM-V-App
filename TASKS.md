@@ -1,6 +1,6 @@
 # MiniCPM-V 端侧视觉助手 - 完整任务清单
 
-> 最后更新: 2026-07-23
+> 最后更新: 2026-07-24
 
 ## 项目目标
 
@@ -20,7 +20,7 @@
 | Sprint 5 | 模型打包流水线 | ✅ 完成 | ONNX 导出、量化(GPTQ/AWQ/INT8)、benchmark、回归测试、发布 |
 | Sprint 6 | Android 客户端 | ✅ 完成 | CameraX、ONNX Runtime Mobile、Room + SQLCipher、Foreground Service |
 | Sprint 7 | iOS 适配 | ✅ 完成 | Swift/SwiftUI、AVFoundation、Core ML、Core Data、Keychain、BGTask |
-| Sprint 8 | 上架与监控 | ⬜ 待开始 | 合规清单、Crashlytics、性能打磨 |
+| Sprint 8 | 上架与监控 | ✅ 完成 | 隐私合规、Crashlytics、Sentry、Prometheus+Grafana、灰度发布、A/B 测试 |
 
 ---
 
@@ -400,24 +400,87 @@ mobile/ios/
 - **Widget 三尺寸**：Small（快速启动）/ Medium（最近结果 + 拍照入口）/ Large（详细统计 + Link 跳转）
 - **SwiftUI 声明式 UI**：Form + Section 分组设置页、ScrollViewReader 自动滚动对话、.regularMaterial 毛玻璃效果
 
-## Sprint 8: 上架与监控 ⬜
+## Sprint 8: 上架与监控 ✅
 
-- [ ] 隐私政策与用户协议
-- [ ] Google Play / App Store 合规清单
-- [ ] **数据安全合规**（GDPR/个人信息保护法 - 数据加密、删除权、导出权）
-- [ ] Firebase Crashlytics 崩溃监控
-- [ ] Sentry 性能监控
-- [ ] Prometheus + Grafana 后端指标
-- [ ] 性能打磨（冷启动、内存优化、电池策略）
-- [ ] 灰度发布与 A/B 测试方案
-- [ ] 数据库迁移方案（SQLite → PostgreSQL 双写过渡期）
+- [x] `compliance/privacy_policy.py` - 隐私政策与用户协议生成器（Markdown/HTML 双输出）
+- [x] `compliance/data_compliance.py` - 数据安全合规管理器（GDPR 数据导出权、删除权、加密审计）
+- [x] `compliance/store_checklist.py` - Google Play / App Store 上架合规清单（40+ 检查项）
+- [x] `monitoring/crashlytics_config.py` - Firebase Crashlytics 崩溃监控配置（Android Gradle + iOS Swift + Kotlin 初始化）
+- [x] `monitoring/sentry_config.py` - Sentry 性能监控配置（Python/Android/iOS 三端初始化 + 敏感数据过滤）
+- [x] `monitoring/metrics.py` - Prometheus 后端指标采集器（30+ 指标定义，Prometheus 格式导出）
+- [x] `monitoring/grafana_dashboard.py` - Grafana 仪表板构建器（12 面板 JSON 配置 + 6 条告警规则）
+- [x] `performance/cold_start.py` - 冷启动优化器（5 阶段分阶段初始化、启动时间分析）
+- [x] `performance/memory_manager.py` - 内存管理器（LRU 缓存淘汰、4 级内存警告响应、图片优化配置）
+- [x] `performance/battery_optimizer.py` - 电池优化器（4 级电源模式自适应、WorkManager/BGTask 配置）
+- [x] `release/gradual_rollout.py` - 灰度发布管理器（5 阶段分阶段发布、哈希分桶、自动回滚）
+- [x] `release/ab_test.py` - A/B 测试框架（实验管理、确定性分桶、Z 检验显著性分析）
+- [x] `release/migration_plan.py` - 数据库迁移方案（SQLite→PostgreSQL 双写过渡 6 阶段、可回滚）
+- [x] 单元测试：84 项测试全部通过（合规 16 项、监控 22 项、性能 18 项、发布 28 项）
+
+### Sprint 8 技术栈
+
+| 组件 | 技术 | 用途 |
+|---|---|---|
+| 崩溃监控 | Firebase Crashlytics | Android/iOS 崩溃收集、ANR 检测 |
+| 性能监控 | Sentry | 三端性能追踪、慢事务检测 |
+| 后端指标 | Prometheus + Grafana | 30+ 指标采集、12 面板仪表板 |
+| 冷启动优化 | 分阶段延迟初始化 | 目标 < 2 秒 |
+| 内存管理 | LRU + 4 级警告响应 | 缓存淘汰、图片内存优化 |
+| 电池优化 | 4 级电源模式自适应 | 推理频率/精度/分辨率动态调整 |
+| 灰度发布 | 5 阶段哈希分桶 | 1%→5%→20%→50%→100% |
+| A/B 测试 | Z 检验显著性分析 | 确定性分桶、置信度计算 |
+| 数据迁移 | 双写过渡 6 阶段 | SQLite→PostgreSQL 零数据丢失 |
+
+### 核心文件列表
+
+```
+app/
+├── compliance/                      # 合规模块
+│   ├── __init__.py
+│   ├── privacy_policy.py            # 隐私政策生成器
+│   ├── data_compliance.py           # GDPR 数据合规
+│   └── store_checklist.py           # 商店上架清单
+├── monitoring/                      # 监控模块
+│   ├── __init__.py
+│   ├── crashlytics_config.py        # Crashlytics 配置
+│   ├── sentry_config.py             # Sentry 配置
+│   ├── metrics.py                   # Prometheus 指标
+│   └── grafana_dashboard.py         # Grafana 仪表板
+├── performance/                     # 性能优化
+│   ├── __init__.py
+│   ├── cold_start.py                # 冷启动优化
+│   ├── memory_manager.py            # 内存管理
+│   └── battery_optimizer.py         # 电池优化
+├── release/                         # 发布管理
+│   ├── __init__.py
+│   ├── gradual_rollout.py           # 灰度发布
+│   ├── ab_test.py                   # A/B 测试
+│   └── migration_plan.py            # 数据库迁移
+└── test_sprint8.py                  # 84 项单元测试
+```
+
+### 设计亮点
+
+- **隐私合规双输出**：`PrivacyPolicyGenerator` 同时生成 Markdown 和 HTML 格式隐私政策，覆盖 10 个章节
+- **GDPR 三权保障**：`DataComplianceManager` 实现数据导出权（JSON/CSV）、删除权（验证哈希）、加密审计（8 项检查）
+- **商店清单 40+ 项**：`StoreChecklistValidator` 覆盖 Google Play 和 App Store 合规要求，支持分类报告和 Markdown 输出
+- **Crashlytics 三端配置**：一键生成 Android Gradle、iOS Swift、Kotlin 初始化代码，GDPR 合规（默认关闭、用户同意后开启）
+- **Sentry 敏感数据过滤**：`SentryEventProcessor` 递归清理 Authorization/Cookie/Password 等敏感字段
+- **Prometheus 30+ 指标**：覆盖 HTTP 请求、推理、端云协同、数据库、Redis、WebSocket、OSS、认证 8 大类
+- **Grafana 12 面板**：KPI 卡片、延迟分布、端云对比、系统健康、同步统计、告警规则一体化
+- **冷启动 5 阶段**：PRE_CREATE→APP_CREATE→POST_CREATE→FIRST_FRAME→IDLE，异步任务不阻塞启动
+- **内存 4 级响应**：NORMAL→WARNING(清图片)→CRITICAL(清一半)→EMERGENCY(全清空)
+- **电池 4 级模式**：PERFORMANCE(fp16/5s)→BALANCED(int8/15s)→LOW_POWER(int8/60s)→ULTRA_LOW(int4/300s)
+- **灰度哈希分桶**：SHA256(user_id) % 10000 实现确定性分桶，用户每次分到相同变体
+- **A/B Z 检验**：双比例 Z 检验判断显著性，自动推荐全量发布或继续实验
+- **迁移 6 阶段**：PREPARATION→DUAL_WRITE→VERIFICATION→READ_SWITCH→SQLITE_READONLY→CLEANUP，每阶段可回滚
 
 ---
 
 ## 当前状态
 
-- **已完成**: Sprint 0 + Sprint 1 + Sprint 2 + Sprint 3 + Sprint 4 + Sprint 5 + Sprint 6 + Sprint 7
-- **下一步**: Sprint 8（上架与监控）
+- **已完成**: Sprint 0 + Sprint 1 + Sprint 2 + Sprint 3 + Sprint 4 + Sprint 5 + Sprint 6 + Sprint 7 + Sprint 8
+- **项目状态**: 全部 Sprint 完成 ✅
 - **模型**: MiniCPM-V 4.6（1.3B 参数，FP16，2.5GB 显存）
 - **数据库**: SQLite（WAL 模式，6 张表，SAVEPOINT 嵌套事务）+ PostgreSQL（7 张表，asyncpg 连接池）
 - **调度引擎**: 端云协同路由（置信度阈值、预算控制、Provider 插件化）

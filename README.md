@@ -97,6 +97,23 @@
 
 **测试结果**: 13 项单元测试通过（Core Data、Keychain、API 模型、推理结果、同步状态）
 
+### Sprint 8: 上架与监控 ✅
+- 隐私政策与用户协议生成器（Markdown/HTML 双输出，10 章节）
+- GDPR 数据合规管理器（数据导出权、删除权、加密审计 8 项检查）
+- Google Play / App Store 上架合规清单（40+ 检查项，分类报告）
+- Firebase Crashlytics 崩溃监控（Android Gradle + iOS Swift + Kotlin 初始化，GDPR 合规）
+- Sentry 性能监控（Python/Android/iOS 三端初始化 + 敏感数据递归过滤）
+- Prometheus 后端指标采集（30+ 指标，8 大类，Prometheus 格式导出）
+- Grafana 仪表板构建器（12 面板 JSON 配置 + 6 条告警规则）
+- 冷启动优化器（5 阶段分阶段初始化，目标 < 2 秒）
+- 内存管理器（LRU 缓存淘汰、4 级内存警告响应、图片优化配置）
+- 电池优化器（4 级电源模式自适应：fp16→int8→int4，推理频率动态调整）
+- 灰度发布管理器（5 阶段哈希分桶 1%→100%、自动回滚阈值监控）
+- A/B 测试框架（确定性分桶、Z 检验显著性分析、置信度计算）
+- 数据库迁移方案（SQLite→PostgreSQL 双写过渡 6 阶段、可回滚、操作手册）
+
+**测试结果**: 84 项单元测试全部通过（合规 16 项、监控 22 项、性能 18 项、发布 28 项）
+
 ## 目录结构
 
 ```
@@ -228,6 +245,11 @@ MiniCPM-V/
 | **iOS 数据库** | **Core Data + Data Protection** | **系统框架** |
 | **iOS 安全** | **Keychain** | **系统框架** |
 | **iOS 后台** | **BGTaskScheduler** | **系统框架** |
+| **崩溃监控** | **Firebase Crashlytics** | **Android + iOS** |
+| **性能监控** | **Sentry** | **Python + Android + iOS** |
+| **后端指标** | **Prometheus + Grafana** | **30+ 指标 / 12 面板** |
+| **灰度发布** | **哈希分桶 + 自动回滚** | **5 阶段 1%→100%** |
+| **A/B 测试** | **Z 检验框架** | **确定性分桶** |
 
 ## 快速开始
 
@@ -258,8 +280,21 @@ pip install transformers>=5.7.0 accelerate>=0.30.1 modelscope torch
 # 4. 点击 Run 按钮部署
 ```
 
-## 下一步
+## 项目状态
 
-**Sprint 8: 上架与监控** — 隐私合规、Crashlytics、性能打磨、灰度发布
+**全部 8 个 Sprint 已完成 ✅**
+
+| Sprint | 内容 | 测试 |
+|--------|------|------|
+| Sprint 0 | 项目初始化与环境搭建 | - |
+| Sprint 1 | 端侧推理引擎 | 云端验证通过 |
+| Sprint 2 | 数据持久层 | 7 项单元测试 |
+| Sprint 3 | API 调度引擎 | 9 项单元测试 |
+| Sprint 4 | 后台服务层 | 13 项单元测试 |
+| Sprint 5 | 模型打包流水线 | 39 项单元测试 |
+| Sprint 6 | Android 客户端 | 10 项单元测试 |
+| Sprint 7 | iOS 适配 | 13 项单元测试 |
+| Sprint 8 | 上架与监控 | 84 项单元测试 |
+| **合计** | | **175 项测试** |
 
 详见 [TASKS.md](./TASKS.md) 完整任务清单。
