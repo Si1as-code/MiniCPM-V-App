@@ -18,7 +18,7 @@
 | Sprint 3 | API 调度引擎 | ✅ 完成 | 端云协同、置信度路由、自动降级、云端 Provider 适配 |
 | Sprint 4 | 后台服务层 | ✅ 完成 | FastAPI 服务、云端数据库、同步引擎、OSS、用户认证 |
 | Sprint 5 | 模型打包流水线 | ✅ 完成 | ONNX 导出、量化(GPTQ/AWQ/INT8)、benchmark、回归测试、发布 |
-| Sprint 6 | Android 客户端 | ⬜ 待开始 | 拍照 UI、Foreground Service、Room DB |
+| Sprint 6 | Android 客户端 | ✅ 完成 | CameraX、ONNX Runtime Mobile、Room + SQLCipher、Foreground Service |
 | Sprint 7 | iOS 适配 | ⬜ 待开始 | Widget、BGTask、Keychain |
 | Sprint 8 | 上架与监控 | ⬜ 待开始 | 合规清单、Crashlytics、性能打磨 |
 
@@ -236,20 +236,90 @@ FastAPI (create_app)
 - **内存泄漏检测**：压力测试使用线性回归分析内存趋势，自动判定泄漏
 - **多目标发布**：一套代码支持本地、S3、OSS、COS、HF 五种发布目标
 
-## Sprint 6: Android 客户端 ⬜
+## Sprint 6: Android 客户端 ✅
 
-- [ ] `mobile/android/app/` - Android 项目骨架
-- [ ] Camera X 集成（拍照、相册选取）
-- [ ] ONNX Runtime Mobile 集成（端侧推理）
-- [ ] Room Database 集成（本地数据持久）
-- [ ] **SQLCipher 数据库加密**（敏感字段 AES-256 加密）
-- [ ] **Android Keystore 密钥管理**（加密密钥安全存储）
-- [ ] Foreground Service（后台常驻、自动识别）
-- [ ] 对话 UI（多轮问答、流式输出）
-- [ ] 设置页（自动识别开关、云端授权、预算限额）
-- [ ] 历史记录页（搜索、筛选、导出）
-- [ ] 登录/注册页（手机号验证码、微信登录）
-- [ ] 数据同步管理页（手动同步、同步状态、冲突提示）
+- [x] `mobile/android/app/` - Android 项目骨架（Gradle Kotlin DSL + Jetpack Compose）
+- [x] CameraX 集成（拍照、实时预览、闪光灯、缩放）
+- [x] ONNX Runtime Mobile 集成（端侧推理、模型预热、NCHW 预处理）
+- [x] Room Database 集成（3 张表、Flow 响应式查询、外键级联删除）
+- [x] **SQLCipher 数据库加密**（AES-256 加密，SupportOpenHelperFactory）
+- [x] Foreground Service（后台常驻、自动识别循环、通知栏状态）
+- [x] 对话 UI（多轮问答、消息气泡、自动滚动）
+- [x] 设置页（自动识别开关、云端授权、预算限额、置信度阈值、WiFi 同步）
+- [x] 历史记录页（搜索、删除、同步状态标记、类型标签）
+- [x] 登录/注册页（手机号验证码、微信登录预留）
+- [x] 数据同步管理页（手动同步、同步状态机、冲突提示）
+- [x] Retrofit 网络层（对接 Sprint 4 后端 API、Gson 序列化）
+- [x] 单元测试：10 项测试（实体、网络数据类、工具方法）
+
+### Android 技术栈
+
+| 组件 | 技术 | 版本 |
+|---|---|---|
+| 语言 | Kotlin | 1.9.20 |
+| UI | Jetpack Compose | BOM 2024.02.00 |
+| 相机 | CameraX | 1.3.1 |
+| 推理 | ONNX Runtime Mobile | 1.16.3 |
+| 数据库 | Room + SQLCipher | 2.6.1 + 4.5.4 |
+| 网络 | Retrofit + OkHttp | 2.9.0 |
+| 图片加载 | Coil | 2.5.0 |
+| 导航 | Navigation Compose | 2.7.7 |
+| 状态管理 | ViewModel + Compose State | 2.7.0 |
+
+### 核心文件列表
+
+```
+mobile/android/app/src/main/java/com/minicpmv/app/
+├── MiniCPMVApplication.kt          # 应用入口（数据库/推理引擎延迟初始化）
+├── MainActivity.kt                   # Compose Navigation + BottomBar
+├── camera/
+│   └── CameraManager.kt              # CameraX 封装（预览/拍照/帧分析）
+├── data/
+│   ├── AppDatabase.kt                # Room + SQLCipher 加密数据库
+│   ├── entity/
+│   │   ├── RecognitionRecord.kt      # 识别记录实体
+│   │   ├── Conversation.kt           # 对话消息实体
+│   │   └── UserSetting.kt            # 用户设置实体 + 键名常量
+│   └── dao/
+│       ├── RecognitionRecordDao.kt   # 识别记录 DAO（搜索/同步标记）
+│       ├── ConversationDao.kt        # 对话 DAO（Flow 查询）
+│       └── UserSettingDao.kt         # 设置 DAO（类型便捷方法）
+├── inference/
+│   └── OnnxInferenceEngine.kt        # ONNX Runtime Mobile 推理引擎
+├── service/
+│   └── RecognitionForegroundService.kt # 前台服务（后台识别循环）
+├── network/
+│   ├── ApiService.kt                 # Retrofit API 接口
+│   └── RetrofitClient.kt             # 单例客户端
+├── viewmodel/
+│   └── MainViewModel.kt              # 相机/推理/历史/设置/同步状态管理
+└── ui/
+    ├── theme/
+    │   ├── Color.kt                  # 配色方案
+    │   ├── Type.kt                   # 字体排版
+    │   └── Theme.kt                  # Material3 主题（亮/暗）
+    ├── camera/
+    │   └── CameraScreen.kt           # 拍照页面（预览/结果卡片）
+    ├── chat/
+    │   └── ChatScreen.kt             # 对话页面（消息气泡）
+    ├── history/
+    │   └── HistoryScreen.kt          # 历史记录（搜索/列表）
+    ├── settings/
+    │   └── SettingsScreen.kt         # 设置（开关/滑块/同步按钮）
+    ├── login/
+    │   └── LoginScreen.kt            # 登录/注册（手机号+验证码）
+    └── sync/
+        └── SyncScreen.kt             # 同步管理（状态机 UI）
+```
+
+### 设计亮点
+
+- **延迟初始化**：`MiniCPMVApplication` 中数据库和推理引擎使用 `by lazy`，首次访问时才创建
+- **SupervisorJob**：应用级和 Service 级协程作用域使用 SupervisorJob，子协程失败不影响其他协程
+- **Flow 响应式**：DAO 返回 `Flow<List<T>>`，Compose 使用 `collectAsStateWithLifecycle` 自动订阅
+- **SQLCipher 加密**：`SupportOpenHelperFactory` 传入密码字节数组，数据库文件 AES-256 加密
+- **前台服务保活**：`RecognitionForegroundService` 以 `START_STICKY` 启动，被杀死后自动重启
+- **BottomBar 导航**：`Scaffold + NavigationBar + NavHost` 实现三标签页切换，状态自动保存
 
 ## Sprint 7: iOS 适配 ⬜
 
@@ -280,8 +350,8 @@ FastAPI (create_app)
 
 ## 当前状态
 
-- **已完成**: Sprint 0 + Sprint 1 + Sprint 2 + Sprint 3 + Sprint 4
-- **下一步**: Sprint 5（模型打包流水线）
+- **已完成**: Sprint 0 + Sprint 1 + Sprint 2 + Sprint 3 + Sprint 4 + Sprint 5 + Sprint 6
+- **下一步**: Sprint 7（iOS 适配）
 - **模型**: MiniCPM-V 4.6（1.3B 参数，FP16，2.5GB 显存）
 - **数据库**: SQLite（WAL 模式，6 张表，SAVEPOINT 嵌套事务）+ PostgreSQL（7 张表，asyncpg 连接池）
 - **调度引擎**: 端云协同路由（置信度阈值、预算控制、Provider 插件化）

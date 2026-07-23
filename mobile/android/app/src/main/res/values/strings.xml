@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MiniCPM-V</string>
+    <string name="app_label">端侧视觉助手</string>
+
+    <!-- 相机页面 -->
+    <string name="camera_capture">拍照</string>
+    <string name="camera_flash_auto">自动闪光灯</string>
+    <string name="camera_flash_on">闪光灯开启</string>
+    <string name="camera_flash_off">闪光灯关闭</string>
+    <string name="recognition_success">识别成功</string>
+    <string name="recognition_failed">识别失败</string>
+    <string name="continue_chat">继续对话</string>
+
+    <!-- 历史页面 -->
+    <string name="history_title">历史记录</string>
+    <string name="history_search_hint">搜索识别记录...</string>
+    <string name="history_empty">暂无识别记录</string>
+    <string name="history_count">共 %d 条记录</string>
+
+    <!-- 设置页面 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_recognition">识别</string>
+    <string name="settings_auto_recognition">后台自动识别</string>
+    <string name="settings_auto_recognition_desc">定时拍照并自动识别场景</string>
+    <string name="settings_confidence_threshold">置信度阈值</string>
+    <string name="settings_confidence_threshold_desc">低于此值将请求云端识别</string>
+    <string name="settings_cloud">云端</string>
+    <string name="settings_cloud_enabled">启用云端 API</string>
+    <string name="settings_cloud_enabled_desc">端侧置信度不足时请求云端</string>
+    <string name="settings_daily_budget">日预算限额</string>
+    <string name="settings_daily_budget_desc">云端 API 每日消费上限（元）</string>
+    <string name="settings_sync">数据同步</string>
+    <string name="settings_sync_wifi_only">仅 WiFi 同步</string>
+    <string name="settings_sync_wifi_only_desc">避免使用移动数据流量</string>
+    <string name="settings_sync_now">立即同步</string>
+    <string name="settings_security">安全</string>
+    <string name="settings_db_encryption">数据库加密</string>
+    <string name="settings_db_encryption_desc">SQLCipher AES-256 加密已启用</string>
+
+    <!-- 同步页面 -->
+    <string name="sync_title">数据同步</string>
+    <string name="sync_description">将本地识别记录同步到云端</string>
+    <string name="sync_start">开始同步</string>
+    <string name="sync_in_progress">同步中...</string>
+    <string name="sync_success">同步成功</string>
+    <string name="sync_error">同步失败</string>
+    <string name="sync_retry">重试</string>
+
+    <!-- 登录页面 -->
+    <string name="login_title">MiniCPM-V</string>
+    <string name="login_subtitle">端侧视觉助手</string>
+    <string name="login_phone">手机号</string>
+    <string name="login_code">验证码</string>
+    <string name="login_get_code">获取验证码</string>
+    <string name="login_code_sent">已发送</string>
+    <string name="login_submit">登录 / 注册</string>
+    <string name="login_wechat">微信登录</string>
+
+    <!-- 通知 -->
+    <string name="notification_channel_name">后台识别服务</string>
+    <string name="notification_channel_desc">MiniCPM-V 后台实时识别</string>
+    <string name="notification_running">后台识别运行中...</string>
+</resources>

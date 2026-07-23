@@ -71,6 +71,18 @@
 
 **测试结果**: 39 项单元测试全部通过（配置、结果类、工具方法、流水线、集成测试）
 
+### Sprint 6: Android 客户端 ✅
+- Android 项目骨架（Gradle Kotlin DSL + Jetpack Compose）
+- CameraX 相机集成（预览、拍照、闪光灯、实时帧分析）
+- ONNX Runtime Mobile 端侧推理引擎（模型预热、NCHW 预处理）
+- Room Database + SQLCipher AES-256 加密数据库
+- Foreground Service 后台常驻识别（通知栏保活、自动循环）
+- Jetpack Compose UI（拍照页、历史页、设置页、对话页、登录页、同步页）
+- Retrofit 网络层（对接 Sprint 4 FastAPI 后端）
+- Material3 主题（亮/暗模式、自定义配色）
+
+**测试结果**: 10 项单元测试通过（实体、网络数据类、工具方法）
+
 ## 目录结构
 
 ```
@@ -147,6 +159,26 @@ MiniCPM-V/
 │   ├── 03_train_lora.sh
 │   ├── 04_train_full.sh
 │   └── README.md
+├── mobile/                     # Sprint 6: Android 客户端
+│   └── android/
+│       ├── app/build.gradle.kts
+│       ├── app/src/main/
+│       │   ├── AndroidManifest.xml
+│       │   ├── java/com/minicpmv/app/
+│       │   │   ├── MiniCPMVApplication.kt
+│       │   │   ├── MainActivity.kt
+│       │   │   ├── camera/CameraManager.kt
+│       │   │   ├── data/AppDatabase.kt
+│       │   │   ├── data/entity/
+│       │   │   ├── data/dao/
+│       │   │   ├── inference/OnnxInferenceEngine.kt
+│       │   │   ├── service/RecognitionForegroundService.kt
+│       │   │   ├── network/
+│       │   │   ├── viewmodel/MainViewModel.kt
+│       │   │   └── ui/
+│       │   └── res/
+│       ├── build.gradle.kts
+│       └── settings.gradle.kts
 ├── docs/                       # 文档
 │   └── 产业级_App_实施报告.md
 ├── TASKS.md                    # 完整任务清单
@@ -172,6 +204,11 @@ MiniCPM-V/
 | 模型量化 | auto-gptq / auto-awq / bitsandbytes | INT4/INT8 |
 | ONNX 导出 | optimum[onnxruntime] / torch.onnx | opset 14 |
 | 模型发布 | boto3 / oss2 / huggingface_hub | S3/OSS/HF |
+| **Android UI** | **Jetpack Compose** | **BOM 2024.02** |
+| **Android 相机** | **CameraX** | **1.3.1** |
+| **Android 推理** | **ONNX Runtime Mobile** | **1.16.3** |
+| **Android 数据库** | **Room + SQLCipher** | **2.6.1 + 4.5.4** |
+| **Android 网络** | **Retrofit + OkHttp** | **2.9.0** |
 
 ## 快速开始
 
@@ -193,8 +230,17 @@ python test_inference.py
 pip install transformers>=5.7.0 accelerate>=0.30.1 modelscope torch
 ```
 
+## Android 客户端快速开始
+
+```bash
+# 1. 打开 Android Studio，导入 mobile/android 目录
+# 2. 同步 Gradle，等待依赖下载完成
+# 3. 连接设备或启动模拟器（API 26+）
+# 4. 点击 Run 按钮部署
+```
+
 ## 下一步
 
-**Sprint 6: Android 客户端** — CameraX、ONNX Runtime Mobile、Room DB、Foreground Service
+**Sprint 7: iOS 适配** — AVFoundation、Core ML、Core Data、Widget 扩展
 
 详见 [TASKS.md](./TASKS.md) 完整任务清单。
