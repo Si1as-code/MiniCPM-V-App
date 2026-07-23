@@ -1,0 +1,57 @@
+# 模型权重与大文件
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.onnx
+*.gguf
+*.mp4
+*.zip
+
+# 官方仓库 clone（不推送到自己的仓库）
+MiniCPM-V
+MiniCPM-V/
+
+# git mirror
+.git-mirror/
+
+# HTML 报告产物（体积大，本地保留）
+MiniCPM-V-完整分析报告/
+MiniCPM-V-技术规划路线图/
+MiniCPM-V-App架构设计/
+.trae-html-share-packages/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 测试产物
+test_image.png
+*.log
+
+# 敏感信息
+.env
+*.pem
+id_ed25519
+id_ed25519.pub
