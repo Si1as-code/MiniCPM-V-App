@@ -30,6 +30,19 @@
 
 **测试结果**: 7 项单元测试全部通过（含事务回滚验证）
 
+### Sprint 3: API 调度引擎 ✅
+- 端云协同路由引擎（`SchedulerRouter.schedule()`）
+- 5 步决策流程：任务类型 → 预算 → 端侧 → 云端 → 降级
+- 预算控制（`BudgetController`，与 `settings_dao`/`usage_dao` 联动）
+- 云端 Provider 插件化架构（`BaseProvider` 基类）
+- Qwen-VL-Plus 适配（通义千问，DashScope HTTP API）
+- 豆包视觉 Pro 适配（火山引擎 Ark HTTP API）
+- 降级策略（云端失败 → 端侧重试，详细 prompt）
+- 异步调度（任务写入 `api_tasks` 表）
+- 环境变量驱动（`CLOUD_CONFIDENCE_THRESHOLD`、`FORCE_LOCAL`、`DAILY_BUDGET`）
+
+**测试结果**: 9 项单元测试全部通过（配置、预算、路由、Provider、降级、环境变量）
+
 ## 目录结构
 
 ```
@@ -51,9 +64,21 @@ MiniCPM-V/
 │   │   ├── dao_usage.py        # 使用统计 DAO
 │   │   ├── migrations.py       # 数据库版本迁移
 │   │   └── __init__.py
+│   ├── api/                    # Sprint 3: API 调度引擎
+│   │   ├── router.py           # 核心路由引擎（调度决策）
+│   │   ├── budget.py           # 预算控制（日限额、自动降级）
+│   │   ├── fallback.py         # 降级策略（端侧重试）
+│   │   ├── config.py           # 调度引擎配置
+│   │   ├── providers/          # 云端 Provider
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py         # Provider 基类
+│   │   │   ├── qwen.py         # 通义千问 VL 适配
+│   │   │   └── doubao.py       # 豆包视觉适配
+│   │   └── __init__.py
 │   ├── config.py               # 全局配置
 │   ├── test_inference.py       # Sprint 1 测试脚本
 │   ├── test_database.py        # Sprint 2 测试脚本
+│   ├── test_api_scheduler.py   # Sprint 3 测试脚本
 │   └── README.md
 ├── autodl_training/            # AutoDL 训练脚本（Sprint 0）
 │   ├── 01_setup_autodl_env.sh
@@ -101,6 +126,6 @@ pip install transformers>=5.7.0 accelerate>=0.30.1 modelscope torch
 
 ## 下一步
 
-**Sprint 3: API 调度引擎** — 端云协同、置信度路由、自动降级
+**Sprint 4: 后台服务层** — FastAPI 服务、云端数据库（PostgreSQL）、数据同步引擎、OSS 图片存储、用户认证体系
 
 详见 [TASKS.md](./TASKS.md) 完整任务清单。

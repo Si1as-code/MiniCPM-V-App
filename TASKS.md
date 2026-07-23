@@ -15,7 +15,7 @@
 | Sprint 0 | 项目初始化与环境搭建 | ✅ 完成 | 仓库分析、AutoDL 环境、SSH 免密同步 |
 | Sprint 1 | 端侧推理引擎 | ✅ 完成 | 6 个 Python 模块，4.6 模型加载+推理+缓存 |
 | Sprint 2 | 数据持久层 | ✅ 完成 | SQLite + DAO + 6 张表 + 事务管理 |
-| Sprint 3 | API 调度引擎 | ⬜ 待开始 | 端云协同、置信度路由、自动降级 |
+| Sprint 3 | API 调度引擎 | ✅ 完成 | 端云协同、置信度路由、自动降级、云端 Provider 适配 |
 | Sprint 4 | 后台服务层 | ⬜ 待开始 | FastAPI 服务、云端数据库、同步引擎、OSS、用户认证 |
 | Sprint 5 | 模型打包流水线 | ⬜ 待开始 | ONNX 量化、benchmark、差分更新 |
 | Sprint 6 | Android 客户端 | ⬜ 待开始 | 拍照 UI、Foreground Service、Room DB |
@@ -100,15 +100,41 @@ usage_stats:         date, local_count, api_count, tokens_used, cost, created_at
 | `provider` | `api_tasks` | 云端 Provider 选择 | 路由到通义千问/豆包/OpenAI |
 | `embedding_vector` | `image_index` | 语义向量 | 同步到 Milvus/Pinecone 向量数据库 |
 
-## Sprint 3: API 调度引擎 ⬜
+## Sprint 3: API 调度引擎 ✅
 
-- [ ] `api/router.py` - API 路由引擎（按置信度、任务类型、成本选择端/云）
-- [ ] `api/providers/base.py` - 云端 Provider 基类
-- [ ] `api/providers/qwen.py` - 通义千问 VL API 适配
-- [ ] `api/providers/doubao.py` - 豆包视觉 API 适配
-- [ ] `api/budget.py` - 预算控制（token 计数、日限额、自动降级）
-- [ ] `api/fallback.py` - 降级策略（云端失败→端侧重试）
-- [ ] 单元测试：路由决策、预算控制
+- [x] `api/config.py` - 调度引擎配置（阈值、成本、Provider 列表）
+- [x] `api/router.py` - API 路由引擎（按置信度、任务类型、成本选择端/云）
+- [x] `api/providers/base.py` - 云端 Provider 基类（统一接口 + 返回格式）
+- [x] `api/providers/qwen.py` - 通义千问 VL API 适配（HTTP API）
+- [x] `api/providers/doubao.py` - 豆包视觉 API 适配（HTTP API）
+- [x] `api/budget.py` - 预算控制（token 计数、日限额、自动降级）
+- [x] `api/fallback.py` - 降级策略（云端失败→端侧重试，详细 prompt）
+- [x] `api/__init__.py` + `providers/__init__.py` - 模块导出
+- [x] 单元测试：9 项测试全部通过（配置、预算、路由、Provider、降级、环境变量）
+
+### 架构设计
+
+```
+用户请求
+    ↓
+SchedulerRouter.schedule()
+    ├── 1. 任务类型路由 → 强制端侧/强制云端/混合
+    ├── 2. 预算检查 → 预算超限则降级端侧
+    ├── 3. 端侧推理 → 置信度 >= 阈值则返回
+    ├── 4. 云端 API → 按优先级尝试 Provider
+    │   ├── QwenProvider (qwen-vl-plus)
+    │   └── DoubaoProvider (doubao-vision-pro-32k)
+    └── 5. 降级策略 → 全部失败则端侧重试
+```
+
+### 设计亮点
+
+- **环境变量驱动**：置信度阈值、预算、强制模式可通过 `CLOUD_CONFIDENCE_THRESHOLD`、`FORCE_LOCAL`、`DAILY_BUDGET` 环境变量覆盖
+- **Provider 插件化**：新增 Provider 只需继承 `BaseProvider` 实现 `_call_api()` 方法
+- **预算联动**：`BudgetController` 与 Sprint 2 的 `settings_dao` 和 `usage_dao` 联动，支持持久化预算配置
+- **TYPE_CHECKING 隔离**：`api` 层通过 `TYPE_CHECKING` 避免直接依赖 `engine` 层（防止 torch 不必要的导入）
+- **异步调度**：`schedule_async()` 将任务写入 `api_tasks` 表，供后续 Sprint 的后台服务消费
+- **双 Provider 适配**：Qwen 和 Doubao 均使用兼容 OpenAI 格式的 HTTP API，切换成本低
 
 ## Sprint 4: 后台服务层 ⬜
 
@@ -193,8 +219,9 @@ usage_stats:         date, local_count, api_count, tokens_used, cost, created_at
 
 ## 当前状态
 
-- **已完成**: Sprint 0 + Sprint 1 + Sprint 2
-- **下一步**: Sprint 3（API 调度引擎）
+- **已完成**: Sprint 0 + Sprint 1 + Sprint 2 + Sprint 3
+- **下一步**: Sprint 4（后台服务层）
 - **模型**: MiniCPM-V 4.6（1.3B 参数，FP16，2.5GB 显存）
 - **数据库**: SQLite（WAL 模式，6 张表，SAVEPOINT 嵌套事务）
+- **调度引擎**: 端云协同路由（置信度阈值、预算控制、Provider 插件化）
 - **测试环境**: AutoDL GPU，transformers 5.7+，ModelScope 下载
