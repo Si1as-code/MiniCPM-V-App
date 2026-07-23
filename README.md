@@ -19,19 +19,41 @@
 
 **测试结果**: 加载 5.8s | 推理 2.3s | 显存 2.5GB | 缓存命中 0.01s
 
+### Sprint 2: 数据持久层 ✅
+- SQLite 本地数据库（WAL 模式，6 张表）
+- 识别记录 DAO（hash 查询、同步标记、统计）
+- 多轮对话 DAO（外键关联、token 统计）
+- API 任务队列 DAO（状态管理、重试）
+- 用户设置 DAO（JSON 序列化、类型快捷方法）
+- 使用统计 DAO（日聚合、预算检查）
+- SAVEPOINT 嵌套事务（原子性保障）
+
+**测试结果**: 7 项单元测试全部通过（含事务回滚验证）
+
 ## 目录结构
 
 ```
 MiniCPM-V/
-├── app/                        # 端侧推理引擎（Sprint 1 已完成）
-│   ├── engine/
+├── app/                        # 应用核心代码
+│   ├── engine/                 # Sprint 1: 端侧推理引擎
 │   │   ├── model_loader.py     # 模型加载（单例、预热、ModelScope）
 │   │   ├── inference_engine.py # 推理引擎（LRU 缓存、线程安全）
 │   │   ├── image_processor.py  # 图像处理（加载、验证、哈希）
 │   │   ├── result_parser.py    # 结果解析（置信度、标签提取）
 │   │   └── __init__.py
+│   ├── data/                   # Sprint 2: 数据持久层
+│   │   ├── database.py         # SQLite 连接管理 + CRUD 基类
+│   │   ├── models.py           # 6 张表的 dataclass 定义
+│   │   ├── dao_recognition.py  # 识别记录 DAO
+│   │   ├── dao_conversation.py # 多轮对话 DAO
+│   │   ├── dao_api_tasks.py    # API 任务队列 DAO
+│   │   ├── dao_settings.py     # 用户设置 DAO
+│   │   ├── dao_usage.py        # 使用统计 DAO
+│   │   ├── migrations.py       # 数据库版本迁移
+│   │   └── __init__.py
 │   ├── config.py               # 全局配置
-│   ├── test_inference.py       # 测试脚本
+│   ├── test_inference.py       # Sprint 1 测试脚本
+│   ├── test_database.py        # Sprint 2 测试脚本
 │   └── README.md
 ├── autodl_training/            # AutoDL 训练脚本（Sprint 0）
 │   ├── 01_setup_autodl_env.sh
@@ -79,6 +101,6 @@ pip install transformers>=5.7.0 accelerate>=0.30.1 modelscope torch
 
 ## 下一步
 
-**Sprint 2: 数据持久层** — SQLite 数据库 + 6 张表 + DAO 层
+**Sprint 3: API 调度引擎** — 端云协同、置信度路由、自动降级
 
 详见 [TASKS.md](./TASKS.md) 完整任务清单。

@@ -14,7 +14,7 @@
 |------|------|------|------|
 | Sprint 0 | 项目初始化与环境搭建 | ✅ 完成 | 仓库分析、AutoDL 环境、SSH 免密同步 |
 | Sprint 1 | 端侧推理引擎 | ✅ 完成 | 6 个 Python 模块，4.6 模型加载+推理+缓存 |
-| Sprint 2 | 数据持久层 | ⬜ 待开始 | SQLite + DAO + 6 张表 |
+| Sprint 2 | 数据持久层 | ✅ 完成 | SQLite + DAO + 6 张表 + 事务管理 |
 | Sprint 3 | API 调度引擎 | ⬜ 待开始 | 端云协同、置信度路由、自动降级 |
 | Sprint 4 | 后台服务层 | ⬜ 待开始 | FastAPI 服务、任务队列、WebSocket |
 | Sprint 5 | 模型打包流水线 | ⬜ 待开始 | ONNX 量化、benchmark、差分更新 |
@@ -49,32 +49,42 @@
 - [x] processor_kwargs.images_kwargs 正确传参方式
 - [x] 云端测试通过（加载 5.8s，推理 2.3s，显存 2.5GB）
 
-## Sprint 2: 数据持久层 ⬜
+## Sprint 2: 数据持久层 ✅
 
-- [ ] `data/database.py` - SQLite 连接管理、迁移、CRUD 基类
-- [ ] `data/models.py` - 6 张表的 dataclass / schema 定义
-- [ ] `data/dao_recognition.py` - 识别记录 DAO
-- [ ] `data/dao_conversation.py` - 多轮对话 DAO
-- [ ] `data/dao_image_index.py` - 图片向量索引 DAO（sqlite-vec）
-- [ ] `data/dao_api_tasks.py` - API 任务队列 DAO
-- [ ] `data/dao_settings.py` - 用户设置 DAO
-- [ ] `data/dao_usage.py` - 使用统计 DAO
-- [ ] `data/migrations.py` - 数据库版本迁移
-- [ ] 单元测试：DAO 层 CRUD 验证
+- [x] `data/database.py` - SQLite 连接管理（WAL 模式、线程隔离）、CRUD 基类
+- [x] `data/models.py` - 6 张表的 dataclass / schema 定义
+- [x] `data/dao_recognition.py` - 识别记录 DAO（hash 查询、同步标记、统计）
+- [x] `data/dao_conversation.py` - 多轮对话 DAO（外键关联、token 统计）
+- [x] `data/dao_image_index.py` - 图片向量索引 DAO（预留 BLOB 字段）
+- [x] `data/dao_api_tasks.py` - API 任务队列 DAO（状态管理、重试、取消）
+- [x] `data/dao_settings.py` - 用户设置 DAO（JSON 序列化、类型快捷方法）
+- [x] `data/dao_usage.py` - 使用统计 DAO（日聚合、预算检查、累计统计）
+- [x] `data/migrations.py` - 数据库版本迁移（schema_version 表、增量升级）
+- [x] `data/__init__.py` - 统一模块导出
+- [x] `test_database.py` - 7 项单元测试全部通过（含事务回滚验证）
 
 ### 数据库表设计
 
 ```
 recognition_records: id, image_hash, image_path, question, answer, confidence,
-                     model_version, device_id, task_type, synced, created_at
+                     model_version, device_id, task_type, synced, created_at, updated_at
 conversations:       id, record_id, role, content, token_count, created_at
 image_index:         id, image_hash, embedding_vector(BLOB), embedding_version,
                      indexed_at
 api_tasks:           id, record_id, provider, status, retry_count, last_error,
-                     scheduled_at, completed_at
+                     scheduled_at, completed_at, created_at
 user_settings:       key, value, updated_at
-usage_stats:         date, local_count, api_count, tokens_used, cost
+usage_stats:         date, local_count, api_count, tokens_used, cost, created_at
 ```
+
+### 设计亮点
+
+- **WAL 模式**：`PRAGMA journal_mode=WAL` 提升读写并发性能
+- **线程隔离**：每个线程独立连接，通过 `threading.local()` 实现
+- **SAVEPOINT 嵌套事务**：`transaction()` 上下文管理器支持嵌套回滚
+- **自动 commit**：`execute()` 在非事务模式下自动提交，事务模式下静默
+- **JSON 设置存储**：`settings_dao` 自动序列化/反序列化任意 Python 类型
+- **日聚合统计**：`usage_dao` 使用 `ON CONFLICT(date) DO UPDATE` 实现高效累加
 
 ## Sprint 3: API 调度引擎 ⬜
 
@@ -141,7 +151,8 @@ usage_stats:         date, local_count, api_count, tokens_used, cost
 
 ## 当前状态
 
-- **已完成**: Sprint 0 + Sprint 1
-- **下一步**: Sprint 2（数据持久层）
+- **已完成**: Sprint 0 + Sprint 1 + Sprint 2
+- **下一步**: Sprint 3（API 调度引擎）
 - **模型**: MiniCPM-V 4.6（1.3B 参数，FP16，2.5GB 显存）
+- **数据库**: SQLite（WAL 模式，6 张表，SAVEPOINT 嵌套事务）
 - **测试环境**: AutoDL GPU，transformers 5.7+，ModelScope 下载
