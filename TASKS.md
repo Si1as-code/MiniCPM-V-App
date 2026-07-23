@@ -16,7 +16,7 @@
 | Sprint 1 | 端侧推理引擎 | ✅ 完成 | 6 个 Python 模块，4.6 模型加载+推理+缓存 |
 | Sprint 2 | 数据持久层 | ✅ 完成 | SQLite + DAO + 6 张表 + 事务管理 |
 | Sprint 3 | API 调度引擎 | ✅ 完成 | 端云协同、置信度路由、自动降级、云端 Provider 适配 |
-| Sprint 4 | 后台服务层 | ⬜ 待开始 | FastAPI 服务、云端数据库、同步引擎、OSS、用户认证 |
+| Sprint 4 | 后台服务层 | ✅ 完成 | FastAPI 服务、云端数据库、同步引擎、OSS、用户认证 |
 | Sprint 5 | 模型打包流水线 | ⬜ 待开始 | ONNX 量化、benchmark、差分更新 |
 | Sprint 6 | Android 客户端 | ⬜ 待开始 | 拍照 UI、Foreground Service、Room DB |
 | Sprint 7 | iOS 适配 | ⬜ 待开始 | Widget、BGTask、Keychain |
@@ -136,35 +136,68 @@ SchedulerRouter.schedule()
 - **异步调度**：`schedule_async()` 将任务写入 `api_tasks` 表，供后续 Sprint 的后台服务消费
 - **双 Provider 适配**：Qwen 和 Doubao 均使用兼容 OpenAI 格式的 HTTP API，切换成本低
 
-## Sprint 4: 后台服务层 ⬜
+## Sprint 4: 后台服务层 ✅
 
-- [ ] `service/app.py` - FastAPI 应用骨架
-- [ ] `service/routes/inference.py` - 推理 API 端点
-- [ ] `service/routes/tasks.py` - 任务管理端点
-- [ ] `service/routes/stats.py` - 统计端点
-- [ ] `service/task_queue.py` - Redis 任务队列
-- [ ] `service/websocket.py` - 实时推送
-- [ ] `service/middleware.py` - 鉴权、限流、日志
-- [ ] Docker Compose 部署配置
+- [x] `service/app.py` - FastAPI 应用骨架（生命周期管理、CORS、全局异常处理）
+- [x] `service/config.py` - 服务配置（数据库、Redis、OSS、JWT、验证码、限流）
+- [x] `service/middleware.py` - 鉴权、限流、日志中间件（滑动窗口限流、可选认证）
+- [x] `service/routes/inference.py` - 推理 API 端点（同步 + 异步）
+- [x] `service/routes/tasks.py` - 任务管理端点（列表、详情、取消）
+- [x] `service/routes/stats.py` - 统计端点（汇总统计、每日统计）
+- [x] `service/task_queue.py` - Redis 任务队列（优雅降级到内存队列）
+- [x] `service/websocket.py` - 实时推送（连接管理、推理进度、任务完成、同步进度）
+- [x] `service/db/postgres.py` - PostgreSQL 云端数据库连接池（asyncpg，单例）
+- [x] `service/db/schema.sql` - 云端数据库 Schema（7 张表，含用户、设备、同步日志）
+- [x] `service/db/sync_engine.py` - 数据同步引擎（增量同步、冲突解决 last_write_wins）
+- [x] `service/oss/client.py` - 阿里云/腾讯云 OSS 图片上传（预签名 URL、去重、模拟模式）
+- [x] `service/auth/jwt.py` - JWT 认证（access_token + refresh_token + 依赖注入）
+- [x] `service/auth/oauth.py` - 微信/Apple ID 第三方登录（抽象客户端 + 具体实现）
+- [x] `service/auth/password.py` - 手机号验证码登录（PBKDF2 密码哈希 + 短信验证码）
+- [x] 单元测试：13 项测试全部通过（配置、JWT、密码、验证码、OSS、同步、队列、WebSocket）
+- [x] Docker Compose 部署配置（FastAPI + PostgreSQL + Redis）
 
-### 云端数据库与用户体系（新增）
+### 新增依赖
 
-- [ ] `service/db/postgres.py` - PostgreSQL 云端数据库连接池（asyncpg）
-- [ ] `service/db/schema.sql` - 云端数据库 Schema
-  - `users` 表（user_id, phone, email, avatar, created_at）
-  - `user_devices` 表（device_id, user_id, platform, push_token, last_sync_at）
-  - `sync_log` 表（device_id, table_name, record_id, operation, sync_at）
-- [ ] `service/db/sync_engine.py` - 数据同步引擎
-  - 增量同步：只上传变更记录（`synced=0`）
-  - 冲突解决：`last_write_wins` + 时间戳向量
-  - 断点续传：大文件分片上传
-- [ ] `service/oss/client.py` - 阿里云/腾讯云 OSS 图片上传
-  - 预签名 URL 生成
-  - 图片去重（基于 image_hash）
-  - 断点续传
-- [ ] `service/auth/jwt.py` - JWT 认证（access_token + refresh_token）
-- [ ] `service/auth/oauth.py` - 微信/Apple ID 第三方登录
-- [ ] `service/auth/password.py` - 手机号验证码登录
+```bash
+pip install fastapi uvicorn asyncpg redis httpx PyJWT python-multipart
+```
+
+### 架构设计
+
+```
+客户端请求
+    ↓
+FastAPI (create_app)
+    ├── 中间件
+    │   ├── LoggingMiddleware    # 请求日志（含慢请求告警）
+    │   ├── RateLimitMiddleware  # IP 限流（滑动窗口，60 次/分钟）
+    │   └── AuthMiddleware       # 可选认证（公开路径放行）
+    ├── 路由
+    │   ├── /api/inference/sync  # 同步推理
+    │   ├── /api/inference/async # 异步推理（写入任务队列）
+    │   ├── /api/tasks           # 任务管理
+    │   ├── /api/stats           # 统计
+    │   └── /api/ws              # WebSocket 实时推送
+    ├── 云端服务
+    │   ├── PostgreSQL (asyncpg) # 用户、设备、同步日志
+    │   ├── Redis                # 任务队列
+    │   └── OSS (阿里云/腾讯云)  # 图片存储
+    └── 端侧引擎
+        ├── SQLite (本地)        # 识别记录、对话、设置
+        ├── 推理引擎             # MiniCPM-V 4.6
+        └── 调度引擎             # 端云协同路由
+```
+
+### 设计亮点
+
+- **环境变量驱动**：全部配置通过 `SERVICE_*` 环境变量覆盖，无需修改代码
+- **可选认证**：公开路径自动放行，其他路径自动解析 Bearer Token
+- **滑动窗口限流**：基于 IP 的请求限流，压力过大时返回 429
+- **Redis 优雅降级**：Redis 不可用时自动切换到内存队列，不影响服务运行
+- **OSS 模拟模式**：未配置 AccessKey 时使用本地文件系统模拟，方便开发测试
+- **PBKDF2 密码哈希**：使用 hashlib 内置算法，无需第三方依赖，避免版本兼容问题
+- **OAuth 抽象客户端**：新增第三方登录只需继承 `OAuthClient` 实现两个方法
+- **同步冲突解决**：`last_write_wins` 策略，后续可扩展为向量时钟
 
 ## Sprint 5: 模型打包流水线 ⬜
 
@@ -219,9 +252,10 @@ SchedulerRouter.schedule()
 
 ## 当前状态
 
-- **已完成**: Sprint 0 + Sprint 1 + Sprint 2 + Sprint 3
-- **下一步**: Sprint 4（后台服务层）
+- **已完成**: Sprint 0 + Sprint 1 + Sprint 2 + Sprint 3 + Sprint 4
+- **下一步**: Sprint 5（模型打包流水线）
 - **模型**: MiniCPM-V 4.6（1.3B 参数，FP16，2.5GB 显存）
-- **数据库**: SQLite（WAL 模式，6 张表，SAVEPOINT 嵌套事务）
+- **数据库**: SQLite（WAL 模式，6 张表，SAVEPOINT 嵌套事务）+ PostgreSQL（7 张表，asyncpg 连接池）
 - **调度引擎**: 端云协同路由（置信度阈值、预算控制、Provider 插件化）
+- **后台服务**: FastAPI + Docker Compose（含 PostgreSQL + Redis）
 - **测试环境**: AutoDL GPU，transformers 5.7+，ModelScope 下载

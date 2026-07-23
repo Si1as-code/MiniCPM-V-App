@@ -1,0 +1,85 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: minicpmv-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: minicpmv
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./app/service/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - minicpmv_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: minicpmv-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - minicpmv_net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: minicpmv-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SERVICE_HOST: "0.0.0.0"
+      SERVICE_PORT: "8000"
+      SERVICE_DB_HOST: "postgres"
+      SERVICE_DB_PORT: "5432"
+      SERVICE_DB_NAME: "minicpmv"
+      SERVICE_DB_USER: "postgres"
+      SERVICE_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      SERVICE_REDIS_HOST: "redis"
+      SERVICE_REDIS_PORT: "6379"
+      SERVICE_JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+      SERVICE_OSS_ACCESS_KEY: ${OSS_ACCESS_KEY:-}
+      SERVICE_OSS_SECRET_KEY: ${OSS_SECRET_KEY:-}
+      HF_ENDPOINT: "https://hf-mirror.com"
+      MODEL_NAME: ${MODEL_NAME:-openbmb/MiniCPM-V-4.6}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - model_cache:/root/.cache
+    command: >
+      sh -c "cd /app && uvicorn service.app:create_app --factory
+             --host 0.0.0.0 --port 8000 --workers 2"
+    networks:
+      - minicpmv_net
+
+volumes:
+  postgres_data:
+  redis_data:
+  model_cache:
+
+networks:
+  minicpmv_net:
+    driver: bridge

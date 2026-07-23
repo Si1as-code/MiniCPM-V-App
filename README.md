@@ -43,6 +43,24 @@
 
 **测试结果**: 9 项单元测试全部通过（配置、预算、路由、Provider、降级、环境变量）
 
+### Sprint 4: 后台服务层 ✅
+- FastAPI 应用骨架（生命周期管理、CORS、全局异常处理）
+- 中间件层（`LoggingMiddleware`、`RateLimitMiddleware`、`AuthMiddleware`）
+- 推理 API（同步 `/api/inference/sync` + 异步 `/api/inference/async`）
+- 任务管理 API（`/api/tasks` 列表/详情/取消）
+- 统计 API（`/api/stats` 汇总/每日统计）
+- WebSocket 实时推送（`/api/ws`，推理进度/任务完成/同步进度）
+- PostgreSQL 云端数据库（asyncpg 连接池，7 张表：users、user_devices、sync_log、recognition_records_cloud、conversations_cloud、usage_stats_cloud）
+- 数据同步引擎（增量同步、`last_write_wins` 冲突解决）
+- OSS 图片上传（阿里云/腾讯云，模拟模式 + 预签名 URL）
+- JWT 认证（access_token + refresh_token + FastAPI 依赖注入）
+- 微信/Apple ID 第三方登录（抽象客户端架构）
+- 手机号验证码登录（PBKDF2 密码哈希）
+- Redis 任务队列（优雅降级到内存队列）
+- Docker Compose 部署（FastAPI + PostgreSQL + Redis）
+
+**测试结果**: 13 项单元测试全部通过（配置、JWT、密码、验证码、OSS、同步、队列、WebSocket）
+
 ## 目录结构
 
 ```
@@ -75,11 +93,33 @@ MiniCPM-V/
 │   │   │   ├── qwen.py         # 通义千问 VL 适配
 │   │   │   └── doubao.py       # 豆包视觉适配
 │   │   └── __init__.py
+│   ├── service/                # Sprint 4: 后台服务层
+│   │   ├── app.py              # FastAPI 应用骨架
+│   │   ├── config.py           # 服务配置
+│   │   ├── middleware.py       # 鉴权、限流、日志
+│   │   ├── task_queue.py       # Redis 任务队列
+│   │   ├── websocket.py        # WebSocket 实时推送
+│   │   ├── test_service.py     # 13 项测试
+│   │   ├── db/
+│   │   │   ├── postgres.py     # PostgreSQL 连接池
+│   │   │   ├── schema.sql      # 云端数据库 Schema
+│   │   │   └── sync_engine.py  # 数据同步引擎
+│   │   ├── auth/
+│   │   │   ├── jwt.py          # JWT 认证
+│   │   │   ├── oauth.py        # 第三方登录
+│   │   │   └── password.py     # 密码/验证码登录
+│   │   ├── oss/
+│   │   │   └── client.py       # 对象存储客户端
+│   │   └── routes/
+│   │       ├── inference.py    # 推理 API
+│   │       ├── tasks.py        # 任务管理 API
+│   │       └── stats.py        # 统计 API
 │   ├── config.py               # 全局配置
 │   ├── test_inference.py       # Sprint 1 测试脚本
 │   ├── test_database.py        # Sprint 2 测试脚本
 │   ├── test_api_scheduler.py   # Sprint 3 测试脚本
-│   └── README.md
+│   └── service/test_service.py # Sprint 4 测试脚本
+├── docker-compose.yml          # Docker Compose 部署
 ├── autodl_training/            # AutoDL 训练脚本（Sprint 0）
 │   ├── 01_setup_autodl_env.sh
 │   ├── 02_download_datasets.py
@@ -103,6 +143,11 @@ MiniCPM-V/
 | 模型下载 | ModelScope | 国内免登录 |
 | 运行环境 | AutoDL GPU | CUDA + PyTorch 2.x |
 | 同步工具 | sync.ps1 | scp / rsync |
+| 后台服务 | FastAPI + Uvicorn | 0.139+ |
+| 云端数据库 | PostgreSQL + asyncpg | 16 |
+| 任务队列 | Redis | 7 |
+| 图片存储 | 阿里云 OSS / 腾讯云 COS | SDK |
+| 认证 | PyJWT + PBKDF2 | HS256 |
 
 ## 快速开始
 
@@ -126,6 +171,6 @@ pip install transformers>=5.7.0 accelerate>=0.30.1 modelscope torch
 
 ## 下一步
 
-**Sprint 4: 后台服务层** — FastAPI 服务、云端数据库（PostgreSQL）、数据同步引擎、OSS 图片存储、用户认证体系
+**Sprint 5: 模型打包流水线** — ONNX 量化、benchmark、差分更新、CI/CD 集成
 
 详见 [TASKS.md](./TASKS.md) 完整任务清单。
