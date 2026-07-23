@@ -16,7 +16,7 @@
 | Sprint 1 | 端侧推理引擎 | ✅ 完成 | 6 个 Python 模块，4.6 模型加载+推理+缓存 |
 | Sprint 2 | 数据持久层 | ✅ 完成 | SQLite + DAO + 6 张表 + 事务管理 |
 | Sprint 3 | API 调度引擎 | ⬜ 待开始 | 端云协同、置信度路由、自动降级 |
-| Sprint 4 | 后台服务层 | ⬜ 待开始 | FastAPI 服务、任务队列、WebSocket |
+| Sprint 4 | 后台服务层 | ⬜ 待开始 | FastAPI 服务、云端数据库、同步引擎、OSS、用户认证 |
 | Sprint 5 | 模型打包流水线 | ⬜ 待开始 | ONNX 量化、benchmark、差分更新 |
 | Sprint 6 | Android 客户端 | ⬜ 待开始 | 拍照 UI、Foreground Service、Room DB |
 | Sprint 7 | iOS 适配 | ⬜ 待开始 | Widget、BGTask、Keychain |
@@ -86,6 +86,20 @@ usage_stats:         date, local_count, api_count, tokens_used, cost, created_at
 - **JSON 设置存储**：`settings_dao` 自动序列化/反序列化任意 Python 类型
 - **日聚合统计**：`usage_dao` 使用 `ON CONFLICT(date) DO UPDATE` 实现高效累加
 
+### 为云端扩展预留的字段（Sprint 4 使用）
+
+当前 Sprint 2 的表结构已为 Sprint 4 的云端数据库和用户体系预留了关键字段：
+
+| 字段 | 所在表 | 预留用途 | Sprint 4 使用方式 |
+|------|--------|---------|------------------|
+| `synced` | `recognition_records` | 云端同步标记 | 同步引擎查询未同步记录 |
+| `device_id` | `recognition_records` | 多设备区分 | 云端 `user_devices` 表关联 |
+| `image_hash` | `recognition_records` | 云端去重 | OSS 上传前检查重复 |
+| `updated_at` | `recognition_records` | 冲突检测 | `last_write_wins` 策略的时间戳 |
+| `record_id` | `api_tasks` | 端云任务关联 | 关联本地记录与云端任务 |
+| `provider` | `api_tasks` | 云端 Provider 选择 | 路由到通义千问/豆包/OpenAI |
+| `embedding_vector` | `image_index` | 语义向量 | 同步到 Milvus/Pinecone 向量数据库 |
+
 ## Sprint 3: API 调度引擎 ⬜
 
 - [ ] `api/router.py` - API 路由引擎（按置信度、任务类型、成本选择端/云）
@@ -107,6 +121,25 @@ usage_stats:         date, local_count, api_count, tokens_used, cost, created_at
 - [ ] `service/middleware.py` - 鉴权、限流、日志
 - [ ] Docker Compose 部署配置
 
+### 云端数据库与用户体系（新增）
+
+- [ ] `service/db/postgres.py` - PostgreSQL 云端数据库连接池（asyncpg）
+- [ ] `service/db/schema.sql` - 云端数据库 Schema
+  - `users` 表（user_id, phone, email, avatar, created_at）
+  - `user_devices` 表（device_id, user_id, platform, push_token, last_sync_at）
+  - `sync_log` 表（device_id, table_name, record_id, operation, sync_at）
+- [ ] `service/db/sync_engine.py` - 数据同步引擎
+  - 增量同步：只上传变更记录（`synced=0`）
+  - 冲突解决：`last_write_wins` + 时间戳向量
+  - 断点续传：大文件分片上传
+- [ ] `service/oss/client.py` - 阿里云/腾讯云 OSS 图片上传
+  - 预签名 URL 生成
+  - 图片去重（基于 image_hash）
+  - 断点续传
+- [ ] `service/auth/jwt.py` - JWT 认证（access_token + refresh_token）
+- [ ] `service/auth/oauth.py` - 微信/Apple ID 第三方登录
+- [ ] `service/auth/password.py` - 手机号验证码登录
+
 ## Sprint 5: 模型打包流水线 ⬜
 
 - [ ] `ml/packaging/quantize.py` - GPTQ/AWQ 量化脚本
@@ -122,10 +155,14 @@ usage_stats:         date, local_count, api_count, tokens_used, cost, created_at
 - [ ] Camera X 集成（拍照、相册选取）
 - [ ] ONNX Runtime Mobile 集成（端侧推理）
 - [ ] Room Database 集成（本地数据持久）
+- [ ] **SQLCipher 数据库加密**（敏感字段 AES-256 加密）
+- [ ] **Android Keystore 密钥管理**（加密密钥安全存储）
 - [ ] Foreground Service（后台常驻、自动识别）
 - [ ] 对话 UI（多轮问答、流式输出）
 - [ ] 设置页（自动识别开关、云端授权、预算限额）
 - [ ] 历史记录页（搜索、筛选、导出）
+- [ ] 登录/注册页（手机号验证码、微信登录）
+- [ ] 数据同步管理页（手动同步、同步状态、冲突提示）
 
 ## Sprint 7: iOS 适配 ⬜
 
@@ -133,19 +170,24 @@ usage_stats:         date, local_count, api_count, tokens_used, cost, created_at
 - [ ] AVFoundation 相机集成
 - [ ] Core ML 模型转换与加载
 - [ ] Core Data 持久化
+- [ ] **Data Protection 数据库加密**（NSFileProtectionComplete）
+- [ ] **Keychain 安全存储**（Token、密钥、用户凭证）
 - [ ] BGTaskScheduler 后台任务
 - [ ] Widget 扩展（快速拍照识别）
-- [ ] Keychain 安全存储
+- [ ] 登录/注册页（手机号验证码、Sign in with Apple）
+- [ ] 数据同步管理页（iCloud 同步开关、手动同步）
 
 ## Sprint 8: 上架与监控 ⬜
 
 - [ ] 隐私政策与用户协议
 - [ ] Google Play / App Store 合规清单
+- [ ] **数据安全合规**（GDPR/个人信息保护法 - 数据加密、删除权、导出权）
 - [ ] Firebase Crashlytics 崩溃监控
 - [ ] Sentry 性能监控
 - [ ] Prometheus + Grafana 后端指标
 - [ ] 性能打磨（冷启动、内存优化、电池策略）
 - [ ] 灰度发布与 A/B 测试方案
+- [ ] 数据库迁移方案（SQLite → PostgreSQL 双写过渡期）
 
 ---
 
