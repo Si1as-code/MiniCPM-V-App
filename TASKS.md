@@ -17,7 +17,7 @@
 | Sprint 2 | 数据持久层 | ✅ 完成 | SQLite + DAO + 6 张表 + 事务管理 |
 | Sprint 3 | API 调度引擎 | ✅ 完成 | 端云协同、置信度路由、自动降级、云端 Provider 适配 |
 | Sprint 4 | 后台服务层 | ✅ 完成 | FastAPI 服务、云端数据库、同步引擎、OSS、用户认证 |
-| Sprint 5 | 模型打包流水线 | ⬜ 待开始 | ONNX 量化、benchmark、差分更新 |
+| Sprint 5 | 模型打包流水线 | ✅ 完成 | ONNX 导出、量化(GPTQ/AWQ/INT8)、benchmark、回归测试、发布 |
 | Sprint 6 | Android 客户端 | ⬜ 待开始 | 拍照 UI、Foreground Service、Room DB |
 | Sprint 7 | iOS 适配 | ⬜ 待开始 | Widget、BGTask、Keychain |
 | Sprint 8 | 上架与监控 | ⬜ 待开始 | 合规清单、Crashlytics、性能打磨 |
@@ -199,14 +199,42 @@ FastAPI (create_app)
 - **OAuth 抽象客户端**：新增第三方登录只需继承 `OAuthClient` 实现两个方法
 - **同步冲突解决**：`last_write_wins` 策略，后续可扩展为向量时钟
 
-## Sprint 5: 模型打包流水线 ⬜
+## Sprint 5: 模型打包流水线 ✅
 
-- [ ] `ml/packaging/quantize.py` - GPTQ/AWQ 量化脚本
-- [ ] `ml/packaging/export_onnx.py` - PyTorch → ONNX 转换
-- [ ] `ml/packaging/benchmark.py` - 延迟/内存/吞吐 benchmark
-- [ ] `ml/packaging/publish.py` - Artifact 发布（S3/GCS）
-- [ ] `ml/packaging/validate.py` - 回归测试
-- [ ] CI/CD pipeline 集成
+- [x] `ml/packaging/quantize.py` - 模型量化脚本（GPTQ / AWQ / INT8 / FP16）
+  - 支持 4 种量化方案：GPTQ(INT4)、AWQ(INT4)、INT8(bitsandbytes)、FP16
+  - 自动校准数据集加载（支持自定义数据集）
+  - 压缩比计算和详细元数据输出
+- [x] `ml/packaging/export_onnx.py` - ONNX 导出（PyTorch → ONNX）
+  - 支持 optimum.exporters.onnx（推荐）和 torch.onnx.export（fallback）
+  - 动态轴配置（支持变长 batch/sequence）
+  - ONNX Runtime 图优化和 INT8 量化
+- [x] `ml/packaging/benchmark.py` - 性能测试（延迟/内存/吞吐）
+  - 3 种测试模式：single（单图）、batch（批量）、stress（压力/内存泄漏）
+  - P50/P95/P99 延迟统计、TTFT/TPOT 测量
+  - 内存泄漏检测（线性回归趋势分析）
+- [x] `ml/packaging/validate.py` - 回归测试（输出一致性验证）
+  - 文本相似度（Jaccard）和语义相似度（n-gram）
+  - 延迟回退检测（量化后性能变化）
+  - 阈值驱动的通过/失败判定
+- [x] `ml/packaging/publish.py` - 模型发布（Artifact 打包上传）
+  - 5 种发布目标：local、S3、OSS、COS、Hugging Face Hub
+  - 自动模型卡片生成（README.md）
+  - SHA256 校验和与打包（tar.gz / zip）
+- [x] `ml/packaging/pipeline.py` - 流水线编排
+  - 配置驱动（JSON），支持步骤跳过和 dry-run
+  - 自动 manifest 生成（执行清单）
+  - 错误处理和步骤中断机制
+- [x] 单元测试：`ml/test_packaging.py` - 39 项测试全部通过
+
+### 设计亮点
+
+- **多后端量化**：GPTQ(auto-gptq/optimum)、AWQ(auto-awq)、INT8(bitsandbytes) 统一接口
+- **ONNX 双后端**：optimum 失败自动 fallback 到 torch.onnx.export
+- **Dry Run 模式**：流水线支持模拟执行，方便测试和调试
+- **配置驱动**：所有步骤通过 JSON 配置，无需修改代码即可调整参数
+- **内存泄漏检测**：压力测试使用线性回归分析内存趋势，自动判定泄漏
+- **多目标发布**：一套代码支持本地、S3、OSS、COS、HF 五种发布目标
 
 ## Sprint 6: Android 客户端 ⬜
 

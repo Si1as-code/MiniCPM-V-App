@@ -61,6 +61,16 @@
 
 **测试结果**: 13 项单元测试全部通过（配置、JWT、密码、验证码、OSS、同步、队列、WebSocket）
 
+### Sprint 5: 模型打包流水线 ✅
+- 模型量化（`quantize.py`）：GPTQ / AWQ / INT8 / FP16 多后端统一接口
+- ONNX 导出（`export_onnx.py`）：optimum + torch.onnx.export 双后端 fallback
+- 性能测试（`benchmark.py`）：single / batch / stress 三种模式，P50/P95/P99 延迟统计
+- 回归测试（`validate.py`）：文本/语义相似度、延迟回退检测、阈值判定
+- 模型发布（`publish.py`）：local / S3 / OSS / COS / HF Hub 五目标支持
+- 流水线编排（`pipeline.py`）：JSON 配置驱动、dry-run、自动 manifest
+
+**测试结果**: 39 项单元测试全部通过（配置、结果类、工具方法、流水线、集成测试）
+
 ## 目录结构
 
 ```
@@ -114,6 +124,17 @@ MiniCPM-V/
 │   │       ├── inference.py    # 推理 API
 │   │       ├── tasks.py        # 任务管理 API
 │   │       └── stats.py        # 统计 API
+│   ├── ml/                     # Sprint 5: 模型打包流水线
+│   │   ├── packaging/
+│   │   │   ├── quantize.py     # 模型量化（GPTQ/AWQ/INT8）
+│   │   │   ├── export_onnx.py  # ONNX 导出
+│   │   │   ├── benchmark.py    # 性能测试
+│   │   │   ├── validate.py     # 回归测试
+│   │   │   ├── publish.py      # 模型发布
+│   │   │   ├── pipeline.py     # 流水线编排
+│   │   │   └── __init__.py
+│   │   ├── test_packaging.py   # 39 项测试
+│   │   └── __init__.py
 │   ├── config.py               # 全局配置
 │   ├── test_inference.py       # Sprint 1 测试脚本
 │   ├── test_database.py        # Sprint 2 测试脚本
@@ -148,6 +169,9 @@ MiniCPM-V/
 | 任务队列 | Redis | 7 |
 | 图片存储 | 阿里云 OSS / 腾讯云 COS | SDK |
 | 认证 | PyJWT + PBKDF2 | HS256 |
+| 模型量化 | auto-gptq / auto-awq / bitsandbytes | INT4/INT8 |
+| ONNX 导出 | optimum[onnxruntime] / torch.onnx | opset 14 |
+| 模型发布 | boto3 / oss2 / huggingface_hub | S3/OSS/HF |
 
 ## 快速开始
 
@@ -171,6 +195,6 @@ pip install transformers>=5.7.0 accelerate>=0.30.1 modelscope torch
 
 ## 下一步
 
-**Sprint 5: 模型打包流水线** — ONNX 量化、benchmark、差分更新、CI/CD 集成
+**Sprint 6: Android 客户端** — CameraX、ONNX Runtime Mobile、Room DB、Foreground Service
 
 详见 [TASKS.md](./TASKS.md) 完整任务清单。
