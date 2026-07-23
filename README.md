@@ -83,6 +83,20 @@
 
 **测试结果**: 10 项单元测试通过（实体、网络数据类、工具方法）
 
+### Sprint 7: iOS 适配 ✅
+- iOS 项目骨架（Swift Package + SwiftUI + iOS 17+）
+- AVFoundation 相机集成（前后切换、闪光灯、YUV 帧分析、UIViewRepresentable 预览）
+- Core ML 端侧推理引擎（CVPixelBuffer 预处理、Neural Engine 自动选择）
+- Core Data 持久化（程序化模型定义、3 实体、Data Protection 加密）
+- Keychain 安全存储（Token/密钥/用户凭证、生物识别访问控制）
+- BGTaskScheduler 后台任务（BGAppRefreshTask + BGProcessingTask）
+- WidgetKit 小组件扩展（小/中/大三尺寸、快速拍照入口）
+- SwiftUI UI（拍照页、历史页、设置页、对话页、登录页、同步页）
+- URLSession 网络层（JWT 自动注入、JSON 编解码）
+- Sign in with Apple 预留
+
+**测试结果**: 13 项单元测试通过（Core Data、Keychain、API 模型、推理结果、同步状态）
+
 ## 目录结构
 
 ```
@@ -209,6 +223,11 @@ MiniCPM-V/
 | **Android 推理** | **ONNX Runtime Mobile** | **1.16.3** |
 | **Android 数据库** | **Room + SQLCipher** | **2.6.1 + 4.5.4** |
 | **Android 网络** | **Retrofit + OkHttp** | **2.9.0** |
+| **iOS UI** | **SwiftUI** | **iOS 17+** |
+| **iOS 推理** | **Core ML** | **系统框架** |
+| **iOS 数据库** | **Core Data + Data Protection** | **系统框架** |
+| **iOS 安全** | **Keychain** | **系统框架** |
+| **iOS 后台** | **BGTaskScheduler** | **系统框架** |
 
 ## 快速开始
 
@@ -241,6 +260,6 @@ pip install transformers>=5.7.0 accelerate>=0.30.1 modelscope torch
 
 ## 下一步
 
-**Sprint 7: iOS 适配** — AVFoundation、Core ML、Core Data、Widget 扩展
+**Sprint 8: 上架与监控** — 隐私合规、Crashlytics、性能打磨、灰度发布
 
 详见 [TASKS.md](./TASKS.md) 完整任务清单。

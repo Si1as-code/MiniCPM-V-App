@@ -19,7 +19,7 @@
 | Sprint 4 | 后台服务层 | ✅ 完成 | FastAPI 服务、云端数据库、同步引擎、OSS、用户认证 |
 | Sprint 5 | 模型打包流水线 | ✅ 完成 | ONNX 导出、量化(GPTQ/AWQ/INT8)、benchmark、回归测试、发布 |
 | Sprint 6 | Android 客户端 | ✅ 完成 | CameraX、ONNX Runtime Mobile、Room + SQLCipher、Foreground Service |
-| Sprint 7 | iOS 适配 | ⬜ 待开始 | Widget、BGTask、Keychain |
+| Sprint 7 | iOS 适配 | ✅ 完成 | Swift/SwiftUI、AVFoundation、Core ML、Core Data、Keychain、BGTask |
 | Sprint 8 | 上架与监控 | ⬜ 待开始 | 合规清单、Crashlytics、性能打磨 |
 
 ---
@@ -321,18 +321,84 @@ mobile/android/app/src/main/java/com/minicpmv/app/
 - **前台服务保活**：`RecognitionForegroundService` 以 `START_STICKY` 启动，被杀死后自动重启
 - **BottomBar 导航**：`Scaffold + NavigationBar + NavHost` 实现三标签页切换，状态自动保存
 
-## Sprint 7: iOS 适配 ⬜
+## Sprint 7: iOS 适配 ✅
 
-- [ ] `mobile/ios/app/` - iOS 项目骨架
-- [ ] AVFoundation 相机集成
-- [ ] Core ML 模型转换与加载
-- [ ] Core Data 持久化
-- [ ] **Data Protection 数据库加密**（NSFileProtectionComplete）
-- [ ] **Keychain 安全存储**（Token、密钥、用户凭证）
-- [ ] BGTaskScheduler 后台任务
-- [ ] Widget 扩展（快速拍照识别）
-- [ ] 登录/注册页（手机号验证码、Sign in with Apple）
-- [ ] 数据同步管理页（iCloud 同步开关、手动同步）
+- [x] `mobile/ios/` - iOS 项目骨架（Swift Package + SwiftUI + Info.plist）
+- [x] AVFoundation 相机集成（前后切换、闪光灯、YUV 帧分析、UIViewRepresentable 预览）
+- [x] Core ML 模型加载与推理（CVPixelBuffer 预处理、Neural Engine 自动选择）
+- [x] Core Data 持久化（程序化模型定义、3 实体、Fetch/Save）
+- [x] **Data Protection 数据库加密**（NSFileProtectionCompleteUntilFirstUserAuthentication）
+- [x] **Keychain 安全存储**（Token/密钥/用户凭证、生物识别访问控制）
+- [x] BGTaskScheduler 后台任务（BGAppRefreshTask 识别 + BGProcessingTask 同步）
+- [x] Widget 扩展（小/中/大三种尺寸、最近识别展示、快速拍照入口）
+- [x] 登录/注册页（手机号验证码、Sign in with Apple 预留）
+- [x] 数据同步管理页（iCloud 同步开关、手动同步、同步状态机）
+- [x] URLSession 网络层（JWT 自动注入、JSON 编解码、错误处理）
+- [x] 单元测试：13 项测试（Core Data、Keychain、API 模型、推理结果、同步状态）
+
+### iOS 技术栈
+
+| 组件 | 技术 | 版本 |
+|---|---|---|
+| 语言 | Swift | 5.9 |
+| UI | SwiftUI | iOS 17+ |
+| 相机 | AVFoundation | 系统框架 |
+| 推理 | Core ML | 系统框架 |
+| 数据库 | Core Data | 系统框架 |
+| 加密 | Data Protection + Keychain | 系统框架 |
+| 后台任务 | BGTaskScheduler | 系统框架 |
+| 网络 | URLSession | 系统框架 |
+| Widget | WidgetKit | 系统框架 |
+| 认证 | Sign in with Apple | 系统框架 |
+
+### 核心文件列表
+
+```
+mobile/ios/
+├── Package.swift                          # SPM 配置
+├── MiniCPMV/
+│   ├── Info.plist                         # 权限 + 后台模式 + ATS
+│   ├── Sources/
+│   │   ├── MiniCPMVApp.swift              # 应用入口（AppState）
+│   │   ├── ContentView.swift              # TabView 导航
+│   │   ├── Theme/
+│   │   │   └── AppTheme.swift             # 配色 + 字体
+│   │   ├── Camera/
+│   │   │   └── CameraManager.swift        # AVFoundation 封装
+│   │   ├── Inference/
+│   │   │   └── CoreMLInferenceEngine.swift # Core ML 推理
+│   │   ├── Data/
+│   │   │   ├── CoreDataStack.swift        # Core Data + Data Protection
+│   │   │   └── CoreDataModel.swift        # 程序化模型定义
+│   │   ├── Security/
+│   │   │   └── KeychainManager.swift      # Keychain 安全存储
+│   │   ├── Service/
+│   │   │   ├── BackgroundTaskScheduler.swift # BGTaskScheduler
+│   │   │   └── SyncManager.swift          # 数据同步引擎
+│   │   ├── Network/
+│   │   │   └── APIClient.swift            # URLSession API 客户端
+│   │   └── Views/
+│   │       ├── Camera/CameraView.swift    # 拍照页
+│   │       ├── History/HistoryView.swift  # 历史页
+│   │       ├── Settings/SettingsView.swift # 设置页
+│   │       ├── Login/LoginView.swift      # 登录 + 对话页
+│   │       └── Sync/SyncView.swift        # 同步页
+│   └── Tests/
+│       └── MiniCPMVTests.swift            # 13 项单元测试
+└── Widget/
+    └── Sources/
+        └── MiniCPMVWidget.swift           # Widget 扩展
+```
+
+### 设计亮点
+
+- **零第三方依赖**：iOS 端全部使用系统框架（AVFoundation/Core ML/Core Data/Keychain/BGTask/URLSession/WidgetKit），无需 SPM 第三方包
+- **程序化 Core Data 模型**：通过代码定义 Entity（CoreDataModelBuilder），无需 .xcdatamodeld 可视化文件
+- **Data Protection 加密**：Core Data 存储 配合 `NSFileProtectionCompleteUntilFirstUserAuthentication`，设备锁定后数据库自动加密
+- **Keychain + 生物识别**：Token 存储支持 `SecAccessControlCreateWithFlags` + `.userPresence`，要求 Face ID/Touch ID 验证
+- **BGTaskScheduler 双任务**：BGAppRefreshTask（轻量识别）+ BGProcessingTask（重度同步），合理利用 iOS 后台执行预算
+- **Widget 三尺寸**：Small（快速启动）/ Medium（最近结果 + 拍照入口）/ Large（详细统计 + Link 跳转）
+- **SwiftUI 声明式 UI**：Form + Section 分组设置页、ScrollViewReader 自动滚动对话、.regularMaterial 毛玻璃效果
 
 ## Sprint 8: 上架与监控 ⬜
 
@@ -350,8 +416,8 @@ mobile/android/app/src/main/java/com/minicpmv/app/
 
 ## 当前状态
 
-- **已完成**: Sprint 0 + Sprint 1 + Sprint 2 + Sprint 3 + Sprint 4 + Sprint 5 + Sprint 6
-- **下一步**: Sprint 7（iOS 适配）
+- **已完成**: Sprint 0 + Sprint 1 + Sprint 2 + Sprint 3 + Sprint 4 + Sprint 5 + Sprint 6 + Sprint 7
+- **下一步**: Sprint 8（上架与监控）
 - **模型**: MiniCPM-V 4.6（1.3B 参数，FP16，2.5GB 显存）
 - **数据库**: SQLite（WAL 模式，6 张表，SAVEPOINT 嵌套事务）+ PostgreSQL（7 张表，asyncpg 连接池）
 - **调度引擎**: 端云协同路由（置信度阈值、预算控制、Provider 插件化）
